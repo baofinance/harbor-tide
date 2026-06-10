@@ -1,0 +1,60 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+
+remappings = [
+  # foundry
+  "forge-std/=lib/forge-std/src/",
+  # openzeppelin (upgradeable brings openzeppelin-contracts as a nested lib)
+  "@openzeppelin/contracts/=lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/",
+  "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
+  "openzeppelin-foundry-upgrades/=lib/openzeppelin-foundry-upgrades/src/",
+  "solidity-stringutils/=lib/openzeppelin-foundry-upgrades/lib/solidity-stringutils/",
+  # solady
+  "@solady/=lib/solady/src/",
+  # chainlink (CCIP)
+  "@chainlink/contracts/=lib/chainlink-brownie-contracts/contracts/src/v0.8/",
+  # bao (audited)
+  "@bao/=lib/bao-base/src/",
+  "@bao-test/=lib/bao-base/test/",
+  "@bao-script/=lib/bao-base/script/",
+  # bao-factory (transitive via bao-base)
+  "@bao-factory/=lib/bao-base/lib/bao-factory/src/",
+  "@bao-factory-test/=lib/bao-base/lib/bao-factory/test/",
+  # harbor-tide
+  "@tide/=src/",
+  "@tide-script/=script/",
+  "@tide-test/=test/",
+]
+
+fs_permissions = [
+  { access = "read", path = "./" },
+  { access = "read-write", path = "./deployments" },
+]
+
+[fmt]
+line_length = 120
+tab_width = 4
+bracket_spacing = false
+int_types = "long"
+
+[rpc_endpoints]
+mainnet = "${MAINNET_RPC_URL}"
+arbitrum = "${ARBITRUM_RPC_URL}"
+base = "${BASE_RPC_URL}"
+megaeth = "${MEGAETH_RPC_URL}"
+local = "${LOCAL_URL}"
+
+# Etherscan API V2 uses a single key across all chains (https://docs.etherscan.io/etherscan-v2).
+[etherscan]
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
+arbitrum = { key = "${ETHERSCAN_API_KEY}", chain = 42161 }
+base = { key = "${ETHERSCAN_API_KEY}", chain = 8453 }
+# MegaETH (chain 4326) verifies via the Etherscan V2 multichain endpoint.
+megaeth = { key = "${ETHERSCAN_API_KEY}", url = "https://api.etherscan.io/v2/api", chain = 4326 }
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
