@@ -20,9 +20,13 @@ library CCIPChains {
     uint256 internal constant ETHEREUM = 1;
     uint256 internal constant ARBITRUM = 42161;
     uint256 internal constant BASE = 8453;
-    // TODO(unverified): MegaETH chain ID and all CCIP addresses/selector below are placeholders.
-    // Confirm against the live Chainlink CCIP directory (and that MegaETH is live on CCIP) before any
-    // deploy or lane wiring that targets MegaETH.
+    // MegaETH CCIP addresses/selector below are CONFIRMED against the Chainlink directory (2026-06):
+    // https://docs.chain.link/ccip/directory/mainnet/chain/megaeth-mainnet
+    // TWO open items before any MegaETH deploy/lane wiring:
+    //   1. EVM chain ID below is UNVERIFIED — the directory lists the CCIP *selector*, not block.chainid.
+    //   2. MegaETH runs CCIP 1.6.0 (lanes are 1.6.0; a token-pool factory exists), but this repo's CCT
+    //      tooling is 1.5.0 (single-arg applyChainUpdates, remotePoolAddress, 1.5.0 pool ctor). The 1.6
+    //      pool/registry interface differs — do NOT wire MegaETH until the CCIP layer is moved to 1.6.
     uint256 internal constant MEGAETH = 4326;
 
     function configFor(uint256 chainId) internal pure returns (Config memory) {
@@ -54,7 +58,8 @@ library CCIPChains {
             });
         }
         if (chainId == MEGAETH) {
-            // TODO(unverified): replace with confirmed MegaETH CCIP values before production use.
+            // Addresses confirmed vs Chainlink directory (2026-06). Blocked on: (1) EVM chain ID above,
+            // (2) MegaETH is CCIP 1.6.0 vs this repo's 1.5.0 CCT tooling. See note at MEGAETH constant.
             return Config({
                 chainSelector: 6093540873831549674,
                 router: 0xfa546248C54939AA6C48279CdC1EAf9A1125c411,
