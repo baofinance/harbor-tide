@@ -20,6 +20,9 @@ library CCIPChains {
     uint256 internal constant ETHEREUM = 1;
     uint256 internal constant ARBITRUM = 42161;
     uint256 internal constant BASE = 8453;
+    // TODO(unverified): MegaETH chain ID and all CCIP addresses/selector below are placeholders.
+    // Confirm against the live Chainlink CCIP directory (and that MegaETH is live on CCIP) before any
+    // deploy or lane wiring that targets MegaETH.
     uint256 internal constant MEGAETH = 4326;
 
     function configFor(uint256 chainId) internal pure returns (Config memory) {
@@ -51,6 +54,7 @@ library CCIPChains {
             });
         }
         if (chainId == MEGAETH) {
+            // TODO(unverified): replace with confirmed MegaETH CCIP values before production use.
             return Config({
                 chainSelector: 6093540873831549674,
                 router: 0xfa546248C54939AA6C48279CdC1EAf9A1125c411,

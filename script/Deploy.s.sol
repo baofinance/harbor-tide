@@ -94,6 +94,10 @@ contract Deploy is HarborTideFactoryDeployer, Script {
 
         vm.stopBroadcast();
 
+        // Fail loud if the handover did not complete (e.g. an interrupted run that missed BaoOwnable's
+        // 1h window): the token must be owned by the multisig before we consider the deploy done.
+        require(HarborTideToken_v1(token).owner() == owner(), "Deploy: ownership not handed to multisig");
+
         // Persist: canonical proxy state + companion record for the non-proxy contracts.
         _saveState(state);
         _writeAux(token, timelock, pool);
