@@ -11,7 +11,7 @@ Chainlink CCT admin/burn surface.
 ## Key properties
 
 - **UUPS upgradeable** (`_authorizeUpgrade` gated by `onlyOwner`).
-- **Roles inherited from bao-base** (`BaoOwnableRoles`):
+- **Roles inherited from bao-base** (`HarborOwnableRoles`):
   - `MINTER_ROLE` — governance minting, **home chain (Ethereum) only**. Held by an **external
     OpenZeppelin `TimelockController`** (default 24h min delay, Harbor multisig as proposer/executor),
     so every governance mint is time-delayed rather than instant. This replaces an in-token "minting
@@ -53,13 +53,17 @@ CCIP pools are **immutable**; "upgrading" a pool means deploying a new one and m
 src/token/HarborTideToken_v1.sol            # the token
 src/token/interfaces/IHarborTideToken.sol   # cap / CCIP / rescue surface
 script/src/HarborTideFactoryDeployer.sol    # bao-base FactoryDeployer subclass: state-driven CREATE3 deploy
-script/src/TideDeployProxy.sol              # ERC1967 proxy that allows empty-init construction (via-stub)
 script/config/CCIPChains.sol                # per-chain CCIP addresses + selectors
 script/ccip/ICCIP.sol                       # version-agnostic CCIP call interfaces
 script/ccip/CCIPArtifacts.sol               # forces compilation of the 0.8.24 Chainlink pool
-script/Deploy.s.sol                         # token + timelock + pool + role wiring + handover
+script/Deploy.s.sol                         # token + timelock + pool + role wiring + handover (salted/CREATE3)
+script/DeployUnsalted.s.sol                 # no-factory fallback deploy (per-chain address; test/no-operator)
 script/AcceptPoolOwnership.s.sol            # multisig accepts Ownable2Step pool ownership
 script/Configure_CCIP.s.sol                 # registry registration + cross-chain lane wiring
+script/deploy.sh                            # wrapper: salted deploy (env + keystore + verify)
+script/deploy-unsalted.sh                   # wrapper: unsalted deploy (writes -unsalted state/aux)
+script/verify.sh                            # (re)verify token impl+proxy, pool, timelock from the aux file
+script/_load-env.sh                         # shared: loads .env, resolves rpc alias -> URL
 deployments/state-<chainId>.json            # canonical proxy state (bao-base schema); idempotent re-runs
 deployments/aux-<chainId>.json              # companion record for non-proxy contracts (timelock, pool)
 test/                                        # unit, timelock, state-deploy, and (skip-guarded) CCIP fork tests
@@ -74,15 +78,17 @@ instead of colliding. The token is a proxy and lives in the canonical `deploymen
 (harbor's exact schema). The `TimelockController` and Chainlink pool are **not** proxies, so they're
 recorded in a companion `deployments/aux-<chainId>.json` that the later steps read.
 
-The proxy is deployed **via the stub pattern**: the BaoFactory CREATE3-deploys an empty (uninitialized)
-proxy pointing at `UUPSProxyDeployStub`, then the deployer EOA immediately `upgradeToAndCall`s into the
-real implementation. This keeps `BaoOwnable`'s temporary owner equal to the deployer (not the CREATE3
-transient deployer). Because OpenZeppelin **v5.6.0** made `ERC1967Proxy` revert
-(`ERC1967ProxyUninitialized()`) on empty init data, the deploy uses `TideDeployProxy` — an `ERC1967Proxy`
-that overrides `_unsafeAllowUninitialized()` — for that first step. The proxy is never left
-uninitialized on-chain (the upgrade+initialize is the very next call). This path is regression-tested
-without a fork in `test/FactoryRepro.t.sol` and end-to-end against the live mainnet factory in
-`test/DeployFork.t.sol`.
+The proxy is deployed **directly** in one step: the BaoFactory CREATE3-deploys a standard OpenZeppelin
+`ERC1967Proxy(impl, initData)` (bao-base's `_deployProxyAndRecord`). The token derives from
+`HarborOwnableRoles`, whose initializer takes the deployer **explicitly** (`_initializeOwner(deployerOwner,
+pendingOwner)`) instead of reading `msg.sender`, so the deployer EOA becomes the temporary owner regardless
+of the CREATE3 transient deployer. This is why no via-stub (and no empty-init proxy workaround) is needed —
+the proxy is initialized with non-empty data in its own constructor, side-stepping OpenZeppelin v5.6.0's
+`ERC1967ProxyUninitialized()` revert entirely. The deployer (temp owner) grants roles, then hands ownership
+to the multisig within `HarborOwnable`'s 1-hour window. This path is regression-tested without a fork in
+`test/FactoryRepro.t.sol` and end-to-end against the live mainnet factory in `test/DeployFork.t.sol`. Note
+that the CREATE3 address is a function of `(factory, salt)` only, so it is identical whether the proxy is
+deployed directly or via a stub.
 
 ## Target chains
 
@@ -119,6 +125,20 @@ Deployment uses Foundry **keystore accounts** (`cast wallet`), not raw private k
 `cast wallet import deployer --interactive`, then pass `--account deployer --sender <deployer-address>`
 to each `forge script` call (shown below).
 
+There are bash wrappers that load `.env`, prompt once for the keystore password, and add the right
+flags — use them or the raw `forge script` calls, whichever you prefer:
+
+```bash
+script/deploy.sh --network all                # salted CREATE3 deploy on all four chains (same address)
+script/deploy.sh --network mainnet            # ...or one chain at a time
+script/deploy-unsalted.sh --network all       # no-factory TEST deploy on all chains (per-chain addresses)
+script/verify.sh --network mainnet            # (re)verify everything from the aux file
+```
+
+`--network` accepts a single rpc alias, a comma list (`mainnet,arbitrum`), or `all`
+(`mainnet,arbitrum,base,megaeth`). With `all`, the keystore password is prompted once and reused; each
+chain comes up as home (mainnet: 1bn + timelock) or remote (others: 0, CCIP-fed).
+
 > **Prerequisite:** the BaoFactory (CREATE3) at `0xD696E56b3A054734d4C6DCBD32E11a278b0EC458` must
 > already be deployed and functional on every target chain, with the deployer authorized as an
 > operator. (Deployed/maintained separately, ahead of the token deploy.)
@@ -147,8 +167,48 @@ cap). Each run writes `deployments/state-<chainId>.json` (the token proxy) and `
 and they make re-runs idempotent. The Chainlink pool is `Ownable2Step`, so the multisig must accept
 ownership next.
 
-> Reliability (sleep between txs, receipt retries, timeouts) is handled by these `forge` flags, not by
-> the script. `--slow` + `--timeout` + `--resume` is the robust combination for mainnet.
+> Reliability is handled by `forge` flags, not by the script. The wrappers default to `--slow`
+> (send the next tx only after the previous confirms) and `--timeout 900` (wait up to 15 min per tx —
+> mainnet can be slow). When verifying, they also pass `--retries 12 --delay 20` so verification rides
+> out Etherscan indexer lag. Override any of these via env: `DEPLOY_TIMEOUT`, `VERIFY_RETRIES`,
+> `VERIFY_DELAY`. Example: `DEPLOY_TIMEOUT=1800 script/deploy.sh --network mainnet`.
+
+#### If a run fails partway
+
+- **Tx sent but forge stopped waiting (the common slow-mainnet case):** re-run with `--resume`. It
+  re-submits/re-checks the transactions that failed or timed out from the broadcast cache, so confirmed
+  txs aren't repeated:
+
+  ```bash
+  script/deploy.sh --network mainnet --resume     # resume one chain
+  ```
+
+  Resume is per-chain, so target the chain that failed (not `--network all`).
+- **A fully successful chain, re-run later:** the state/aux files make it idempotent — the token is
+  skipped (CREATE3 lands at the same address) and the timelock/pool step is skipped too.
+- **Verification only failed (deploy succeeded):** just run `script/verify.sh --network <name>` — it's
+  safe to repeat (Etherscan "already verified" is treated as success).
+
+#### Unsalted (no-factory) fallback deploy
+
+The salted path needs the deployer to be a BaoFactory operator on each chain. Before that's set up
+everywhere, you can stand up a **full multichain TEST deployment** (e.g. to start building the frontend)
+**without** the factory:
+
+```bash
+script/deploy-unsalted.sh --network all --account deployer --sender <deployer>
+# or one chain: script/deploy-unsalted.sh --network arbitrum --account deployer --sender <deployer>
+```
+
+This deploys the token impl + an `ERC1967Proxy` directly (plain CREATE) on each chain, so the proxy
+address is **per-chain — NOT the canonical CREATE3 address**, and differs across chains. It records to
+`deployments/state-<chainId>-unsalted.json` / `deployments/aux-<chainId>-unsalted.json` so it never
+collides with the real salted deploy. Same home/remote behavior, role wiring, pool, and multisig
+handover as the salted path.
+
+> **Migration note:** the unsalted (test) addresses will **not** match the eventual salted addresses.
+> Once you have operator rights, run `script/deploy.sh --network all` (the production salted deploy) and
+> update the frontend to the new, address-stable token — then retire the unsalted deployment.
 
 ### 2. Per chain (as the multisig) — accept pool ownership
 
@@ -178,8 +238,17 @@ production.
 ### Verification
 
 Etherscan API **V2** uses a single `ETHERSCAN_API_KEY` for all chains (including MegaETH via the V2
-multichain endpoint). Add `--verify` to any deploy command, or verify after the fact with
-`forge verify-contract --chain <id> ...`.
+multichain endpoint). Add `--verify` to any deploy command, or verify after the fact with `script/verify.sh`:
+
+```bash
+script/verify.sh --network mainnet              # salted deploy
+script/verify.sh --network arbitrum --unsalted  # unsalted deploy (reads the -unsalted aux file)
+```
+
+It reads the aux file written at deploy time and verifies the token implementation, the token proxy (a
+standard `ERC1967Proxy` for both salted and unsalted), the Chainlink `BurnMintTokenPool` (solc
+0.8.24), and the `TimelockController` (home chain) — reconstructing each contract's constructor args.
+Failures don't abort the run; it prints an `ok/fail/skip` summary and exits non-zero if anything failed.
 
 ## Minting (governance, via the timelock)
 

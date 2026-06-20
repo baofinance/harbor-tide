@@ -103,8 +103,9 @@ contract CCIPRoundTripForkTest is Test {
         CCIPChains.Config memory cfg = CCIPChains.configFor(chainId);
 
         address impl = address(new HarborTideToken_v1());
-        bytes memory initData =
-            abi.encodeCall(HarborTideToken_v1.initialize, (address(this), "Harbor Tide", "TIDE", mintTo, mintAmount));
+        bytes memory initData = abi.encodeCall(
+            HarborTideToken_v1.initialize, (address(this), address(this), "Harbor Tide", "TIDE", mintTo, mintAmount)
+        );
         token = HarborTideToken_v1(address(new ERC1967Proxy(impl, initData)));
 
         address[] memory allowlist = new address[](0);

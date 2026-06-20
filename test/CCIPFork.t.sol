@@ -118,8 +118,9 @@ contract CCIPForkTest is Test {
 
     function _deployToken(address mintTo, uint256 mintAmount) internal returns (HarborTideToken_v1) {
         address impl = address(new HarborTideToken_v1());
-        bytes memory initData =
-            abi.encodeCall(HarborTideToken_v1.initialize, (address(this), "Harbor Tide", "TIDE", mintTo, mintAmount));
+        bytes memory initData = abi.encodeCall(
+            HarborTideToken_v1.initialize, (address(this), address(this), "Harbor Tide", "TIDE", mintTo, mintAmount)
+        );
         return HarborTideToken_v1(address(new ERC1967Proxy(impl, initData)));
     }
 }

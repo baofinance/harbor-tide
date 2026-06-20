@@ -40,8 +40,9 @@ contract HarborTideTokenV1Test is Test {
     /// @dev Deploys a fresh proxy. The test contract is the (temporary) owner so it can grant roles.
     function _deploy(address mintTo, uint256 mintAmount) internal returns (HarborTideToken_v1) {
         address impl = address(new HarborTideToken_v1());
-        bytes memory initData =
-            abi.encodeCall(HarborTideToken_v1.initialize, (address(this), "Harbor Tide", "TIDE", mintTo, mintAmount));
+        bytes memory initData = abi.encodeCall(
+            HarborTideToken_v1.initialize, (address(this), address(this), "Harbor Tide", "TIDE", mintTo, mintAmount)
+        );
         return HarborTideToken_v1(address(new ERC1967Proxy(impl, initData)));
     }
 
@@ -77,7 +78,7 @@ contract HarborTideTokenV1Test is Test {
     function test_initialMint_aboveCap_reverts() public {
         address impl = address(new HarborTideToken_v1());
         bytes memory initData = abi.encodeCall(
-            HarborTideToken_v1.initialize, (address(this), "Harbor Tide", "TIDE", multisig, MAX_SUPPLY + 1)
+            HarborTideToken_v1.initialize, (address(this), address(this), "Harbor Tide", "TIDE", multisig, MAX_SUPPLY + 1)
         );
         vm.expectRevert(abi.encodeWithSelector(IHarborTideToken.ExceedsMaxSupply.selector, MAX_SUPPLY + 1, MAX_SUPPLY));
         new ERC1967Proxy(impl, initData);
@@ -85,7 +86,7 @@ contract HarborTideTokenV1Test is Test {
 
     function test_cannotReinitialize() public {
         vm.expectRevert();
-        token.initialize(address(this), "x", "x", address(0), 0);
+        token.initialize(address(this), address(this), "x", "x", address(0), 0);
     }
 
     // --------------------------------------------------------------------- //
@@ -240,16 +241,16 @@ contract HarborTideTokenV1Test is Test {
     // --------------------------------------------------------------------- //
 
     function test_getCCIPAdmin_tracksOwner() public {
-        // Deploy with the multisig as the *final* owner; bao-base makes the deployer the temp owner.
+        // Deploy with this test as the explicit deployer (temp owner) and the multisig as the *final* owner.
         address impl = address(new HarborTideToken_v1());
         bytes memory initData =
-            abi.encodeCall(HarborTideToken_v1.initialize, (multisig, "Harbor Tide", "TIDE", address(0), 0));
+            abi.encodeCall(HarborTideToken_v1.initialize, (address(this), multisig, "Harbor Tide", "TIDE", address(0), 0));
         HarborTideToken_v1 t = HarborTideToken_v1(address(new ERC1967Proxy(impl, initData)));
 
         assertEq(t.owner(), address(this));
         assertEq(t.getCCIPAdmin(), address(this));
 
-        // Complete the bao-base ownership handover to the multisig.
+        // Complete the HarborOwnable ownership handover to the multisig.
         t.transferOwnership(multisig);
         assertEq(t.owner(), multisig);
         assertEq(t.getCCIPAdmin(), multisig);

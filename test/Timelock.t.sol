@@ -21,8 +21,9 @@ contract TimelockTest is Test {
 
     function setUp() public {
         address impl = address(new HarborTideToken_v1());
-        bytes memory initData =
-            abi.encodeCall(HarborTideToken_v1.initialize, (address(this), "Harbor Tide", "TIDE", address(0), 0));
+        bytes memory initData = abi.encodeCall(
+            HarborTideToken_v1.initialize, (address(this), address(this), "Harbor Tide", "TIDE", address(0), 0)
+        );
         token = HarborTideToken_v1(address(new ERC1967Proxy(impl, initData)));
 
         address[] memory controllers = new address[](1);

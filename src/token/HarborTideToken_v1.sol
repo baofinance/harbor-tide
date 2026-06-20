@@ -15,7 +15,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
-import {BaoOwnableRoles} from "@bao/BaoOwnableRoles.sol";
+import {HarborOwnableRoles} from "@bao/HarborOwnableRoles.sol";
 
 import {IMintable} from "@bao/interfaces/IMintable.sol";
 import {IBurnable} from "@bao/interfaces/IBurnable.sol";
@@ -49,7 +49,7 @@ contract HarborTideToken_v1 is
     UUPSUpgradeable,
     ERC20PermitUpgradeable,
     ERC20BurnableUpgradeable,
-    BaoOwnableRoles,
+    HarborOwnableRoles,
     IMintable,
     IBurnable,
     IBurnableFrom,
@@ -78,19 +78,24 @@ contract HarborTideToken_v1 is
     }
 
     /// @notice Initialise the UUPS proxy.
+    /// @param deployerOwner The temporary owner during deploy (the deployer EOA) that grants roles and
+    ///        completes the handover. `HarborOwnable` takes this *explicitly* rather than reading
+    ///        `msg.sender`, so the proxy can be CREATE3-deployed directly via BaoFactory (no via-stub
+    ///        and no empty-init proxy workaround needed).
     /// @param owner_ The address the owner is expected to be after a transferOwnership during deploy.
     /// @param name_ The name of the ERC20 token.
     /// @param symbol_ The symbol of the ERC20 token.
     /// @param initialMintTo Recipient of the initial mint (the multisig on the home chain).
     /// @param initialMintAmount Amount to mint at init - the full 1bn on the home chain, 0 on remote chains.
     function initialize(
+        address deployerOwner,
         address owner_,
         string memory name_,
         string memory symbol_,
         address initialMintTo,
         uint256 initialMintAmount
     ) public initializer {
-        _initializeOwner(owner_);
+        _initializeOwner(deployerOwner, owner_);
         __ERC20_init(name_, symbol_);
         __ERC20Permit_init(name_);
 
@@ -143,7 +148,7 @@ contract HarborTideToken_v1 is
         IERC20(token).safeTransfer(to, amount);
     }
 
-    /// @inheritdoc BaoOwnableRoles
+    /// @inheritdoc HarborOwnableRoles
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IMintableRole).interfaceId || interfaceId == type(IBurnableRole).interfaceId
             || interfaceId == type(IMintable).interfaceId || interfaceId == type(IBurnable).interfaceId

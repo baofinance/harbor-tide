@@ -40,8 +40,12 @@ contract Deploy is HarborTideFactoryDeployer, Script {
         DeploymentTypes.State memory state = _loadState();
 
         vm.startBroadcast();
+        (, address deployer,) = vm.readCallers(); // the broadcasting EOA (--sender / --account)
 
         // 1. Token (UUPS proxy) — canonical state, idempotent across re-runs.
+        // Deployed directly via BaoFactory CREATE3 (`_deployProxyAndRecord`): `HarborOwnableRoles` takes
+        // the deployer explicitly, so the proxy needs no via-stub. The deployer EOA is the temporary
+        // owner that grants roles and completes the handover; the multisig is the final owner.
         address token;
         if (DeploymentState.hasProxy(state, "token")) {
             token = _predictAddress("token");
@@ -50,10 +54,11 @@ contract Deploy is HarborTideFactoryDeployer, Script {
             HarborTideToken_v1 impl = new HarborTideToken_v1();
             uint256 initialMint = isHome ? impl.MAX_SUPPLY() : 0;
             bytes memory initData = abi.encodeCall(
-                HarborTideToken_v1.initialize, (owner(), TOKEN_NAME, TOKEN_SYMBOL, owner(), initialMint)
+                HarborTideToken_v1.initialize, (deployer, owner(), TOKEN_NAME, TOKEN_SYMBOL, owner(), initialMint)
             );
             _recordImplementation(state, "token", "HarborTideToken_v1.sol", "HarborTideToken_v1", address(impl));
-            token = _deployTideProxyAndRecord(state, "token", address(impl), initData);
+            token = _deployProxyAndRecord(state, "token", address(impl), initData);
+            _setTokenVerifyInfo(address(impl), initData);
             console.log("  token minted initial supply: %s TIDE", initialMint / 1e18);
         }
 
@@ -94,7 +99,7 @@ contract Deploy is HarborTideFactoryDeployer, Script {
 
         vm.stopBroadcast();
 
-        // Fail loud if the handover did not complete (e.g. an interrupted run that missed BaoOwnable's
+        // Fail loud if the handover did not complete (e.g. an interrupted run that missed HarborOwnable's
         // 1h window): the token must be owned by the multisig before we consider the deploy done.
         require(HarborTideToken_v1(token).owner() == owner(), "Deploy: ownership not handed to multisig");
 

@@ -3,14 +3,10 @@ pragma solidity >=0.8.28 <0.9.0;
 
 import {Vm} from "forge-std/Vm.sol";
 
-import {IBaoFactory} from "@bao-factory/IBaoFactory.sol";
 import {FactoryDeployer, WellKnownAddress} from "@bao-script/deployment/FactoryDeployer.sol";
 import {DeploymentState} from "@bao-script/deployment/DeploymentState.sol";
 import {DeploymentTypes} from "@bao-script/deployment/DeploymentTypes.sol";
 import {JsonSerializer} from "@bao-script/deployment/JsonSerializer.sol";
-import {UUPSProxyDeployStub, IUUPSUpgradeableProxy} from "@bao-script/deployment/UUPSProxyDeployStub.sol";
-
-import {TideDeployProxy} from "@tide-script/src/TideDeployProxy.sol";
 
 /// @title HarborTideFactoryDeployer
 /// @notice Harbor-specific base for the Harbor Tide deploy scripts.
@@ -101,18 +97,38 @@ abstract contract HarborTideFactoryDeployer is FactoryDeployer {
 
     // ========== Aux record (non-proxy contracts: timelock + pool) ==========
 
-    function _auxPath(uint256 chainId) internal pure returns (string memory) {
-        return string.concat("deployments/aux-", _vm.toString(chainId), ".json");
+    /// @dev Honours `DEPLOY_AUX_SUFFIX` so the unsalted (no-factory) deploy can write to a separate
+    ///      `deployments/aux-<chainId>-unsalted.json` without clobbering the canonical salted record.
+    function _auxPath(uint256 chainId) internal view returns (string memory) {
+        return string.concat(
+            "deployments/aux-", _vm.toString(chainId), _vm.envOr("DEPLOY_AUX_SUFFIX", string("")), ".json"
+        );
     }
 
-    /// @notice Record the non-proxy contracts so later scripts (and other chains) can read them.
+    // ========== Verification metadata (consumed by script/verify.sh) ==========
+    // Captured during the token deploy so verify.sh can reconstruct the proxy's constructor args from the
+    // aux file. Both the salted (BaoFactory CREATE3, direct) and unsalted (plain CREATE) paths deploy a
+    // standard OZ `ERC1967Proxy(impl, initData)`, so the only metadata needed is the impl + init data.
+
+    address internal _verifyTokenImpl;
+    bytes internal _verifyTokenInitData;
+
+    function _setTokenVerifyInfo(address impl, bytes memory initData) internal {
+        _verifyTokenImpl = impl;
+        _verifyTokenInitData = initData;
+    }
+
+    /// @notice Record the non-proxy contracts (+ token verify metadata) so later scripts (and other
+    ///         chains) can read them, and so `verify.sh` can rebuild each contract's constructor args.
     function _writeAux(address token, address timelock, address pool) internal {
         _vm.createDir("deployments", true);
         string memory obj = "harbor-tide-aux";
         _vm.serializeUint(obj, "chainId", block.chainid);
         _vm.serializeAddress(obj, "token", token);
         _vm.serializeAddress(obj, "timelock", timelock);
-        string memory json = _vm.serializeAddress(obj, "pool", pool);
+        _vm.serializeAddress(obj, "pool", pool);
+        _vm.serializeAddress(obj, "tokenImpl", _verifyTokenImpl);
+        string memory json = _vm.serializeBytes(obj, "tokenInitData", _verifyTokenInitData);
         _vm.writeJson(json, _auxPath(block.chainid));
     }
 
@@ -129,44 +145,5 @@ abstract contract HarborTideFactoryDeployer is FactoryDeployer {
     function _readDeployedPool(uint256 chainId) internal view returns (address pool) {
         (, pool) = _readAux(chainId);
         require(pool != address(0), "HarborTide: no recorded pool for chain");
-    }
-
-    // ========== Via-stub proxy deploy (OZ v5.6 compatible) ==========
-
-    /// @notice Deploy a UUPS proxy via the stub pattern and record it in deployment state.
-    /// @dev Mirrors bao-base's `_deployProxyViaStubAndRecord`, but deploys `TideDeployProxy` (which
-    ///      permits empty-init construction) instead of OZ's `ERC1967Proxy`, whose v5.6.0 constructor
-    ///      reverts `ERC1967ProxyUninitialized()` on empty `_data`. The proxy is initialized in the very
-    ///      next call (`upgradeToAndCall`) from the deployer EOA, so `BaoOwnable`'s temporary owner is
-    ///      the deployer (not the CREATE3 transient deployer), exactly as the via-stub pattern intends.
-    function _deployTideProxyAndRecord(
-        DeploymentTypes.State memory stateData,
-        string memory proxyId,
-        address implementation,
-        bytes memory initData
-    ) internal returns (address proxy) {
-        bytes32 salt = keccak256(abi.encodePacked(saltPrefix(), "::", proxyId));
-        IBaoFactory factory = IBaoFactory(baoFactory());
-        address predicted = factory.predictAddress(salt);
-
-        UUPSProxyDeployStub stub = _getOrDeployStub();
-        proxy = factory.deploy(
-            abi.encodePacked(type(TideDeployProxy).creationCode, abi.encode(address(stub), bytes(""))), salt
-        );
-        require(proxy == predicted, "HarborTide: proxy address mismatch");
-
-        IUUPSUpgradeableProxy(proxy).upgradeToAndCall(implementation, initData);
-
-        _registerForOwnershipTransfer(proxy, _saltString(proxyId));
-        DeploymentState.recordProxy(
-            stateData,
-            DeploymentTypes.ProxyRecord({
-                id: proxyId,
-                proxy: proxy,
-                implementation: implementation,
-                salt: saltPrefix(),
-                deploymentTime: uint64(block.timestamp)
-            })
-        );
     }
 }
