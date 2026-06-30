@@ -55,6 +55,8 @@ mainnet = { key = "${ETHERSCAN_API_KEY}" }
 arbitrum = { key = "${ETHERSCAN_API_KEY}", chain = 42161 }
 base = { key = "${ETHERSCAN_API_KEY}", chain = 8453 }
 # MegaETH (chain 4326) verifies via the Etherscan V2 multichain endpoint.
-megaeth = { key = "${ETHERSCAN_API_KEY}", url = "https://api.etherscan.io/v2/api", chain = 4326 }
+# Use ?chainid=4326 in the URL — the `chain = 4326` field makes `forge script` abort with
+# "Chain 4326 not supported" when the RPC resolves to MegaETH.
+megaeth = { key = "${ETHERSCAN_API_KEY}", url = "https://api.etherscan.io/v2/api?chainid=4326" }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
