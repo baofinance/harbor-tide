@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "chainId": "42161",
+  "createdAt": 1783112820787,
+  "meta": {
+    "name": "Harbor Tide \u2014 accept pool ownership (Arbitrum One)",
+    "description": "Call acceptOwnership() on the Chainlink BurnMintTokenPool at 0x3A1b6bE99E0b77e07269e8c45c51CE62052C15Cd. Required before Configure_CCIP. Matches script/AcceptPoolOwnership.s.sol.",
+    "txBuilderVersion": "1.16.5",
+    "createdFromSafeAddress": "0x9bABfC1A1952a6ed2caC1922BFfE80c0506364a2"
+  },
+  "transactions": [
+    {
+      "to": "0x3A1b6bE99E0b77e07269e8c45c51CE62052C15Cd",
+      "value": "0",
+      "data": "0x79ba5097",
+      "contractMethod": {
+        "inputs": [],
+        "name": "acceptOwnership",
+        "payable": false
+      },
+      "contractInputsValues": {}
+    }
+  ]
+}

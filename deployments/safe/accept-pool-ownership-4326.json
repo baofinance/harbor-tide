@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "chainId": "4326",
+  "createdAt": 1783112820787,
+  "meta": {
+    "name": "Harbor Tide \u2014 accept pool ownership (MegaETH)",
+    "description": "Call acceptOwnership() on the Chainlink BurnMintTokenPool at 0x7CC39a29b358FaaE718fe50E6571e1C80Aa6Cd69. Required before Configure_CCIP. Matches script/AcceptPoolOwnership.s.sol.",
+    "txBuilderVersion": "1.16.5",
+    "createdFromSafeAddress": "0x9bABfC1A1952a6ed2caC1922BFfE80c0506364a2"
+  },
+  "transactions": [
+    {
+      "to": "0x7CC39a29b358FaaE718fe50E6571e1C80Aa6Cd69",
+      "value": "0",
+      "data": "0x79ba5097",
+      "contractMethod": {
+        "inputs": [],
+        "name": "acceptOwnership",
+        "payable": false
+      },
+      "contractInputsValues": {}
+    }
+  ]
+}
