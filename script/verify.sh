@@ -108,8 +108,13 @@ verify_one() {
   local -a cmd
   cmd=("$FORGE" verify-contract "$address" "$contract_path"
     --verifier etherscan --etherscan-api-key "$ETHERSCAN_API_KEY"
-    --compiler-version "$compiler" --chain "$VERIFY_CHAIN"
+    --compiler-version "$compiler"
     --watch --retries "$VERIFY_RETRIES" --delay "$VERIFY_DELAY")
+  if [[ "$NETWORK" == "megaeth" ]]; then
+    cmd+=(--verifier-url "https://api.etherscan.io/v2/api?chainid=4326")
+  else
+    cmd+=(--chain "$VERIFY_CHAIN")
+  fi
   [[ -n "$ctor_args" ]] && cmd+=(--constructor-args "$ctor_args")
 
   local out

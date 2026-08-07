@@ -91,8 +91,14 @@ run_one() {
   echo ""
   echo "=== Harbor Tide deploy (salted / CREATE3) — $network ==="
   echo "  sender: $SENDER   verify: $VERIFY"
+  # BurnMintTokenPool is solc 0.8.24 (script/ccip/CCIPArtifacts.sol). `forge script` only compiles
+  # the Deploy.s.sol graph (0.8.30), so the pool artifact must exist before vm.deployCode runs.
+  "$FORGE" build script/ccip/CCIPArtifacts.sol >/dev/null
   local cmd=("$FORGE" script script/Deploy.s.sol:Deploy
     --rpc-url "$rpc_url" --broadcast --slow --timeout "$TIMEOUT" --sender "$SENDER" "${SIGNER[@]}")
+  # MegaETH charges compute + storage intrinsic gas (min ~60k, not 21k). Foundry's local EVM
+  # underestimates this unless --skip-simulation is set (see docs.megaeth.com/developer-docs).
+  [[ "$network" == "megaeth" ]] && cmd+=(--skip-simulation)
   [[ "$VERIFY" == true ]] && cmd+=(--verify --retries "$VERIFY_RETRIES" --delay "$VERIFY_DELAY")
   [[ "$RESUME" == true ]] && cmd+=(--resume)
   "${cmd[@]}"

@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "chainId": "1",
+  "createdAt": 1783112820787,
+  "meta": {
+    "name": "Harbor Tide \u2014 accept pool ownership (Ethereum mainnet)",
+    "description": "Call acceptOwnership() on the Chainlink BurnMintTokenPool at 0x76E053c171c10d1070f9E7819B6933A837c3A3BB. Required before Configure_CCIP. Matches script/AcceptPoolOwnership.s.sol.",
+    "txBuilderVersion": "1.16.5",
+    "createdFromSafeAddress": "0x9bABfC1A1952a6ed2caC1922BFfE80c0506364a2"
+  },
+  "transactions": [
+    {
+      "to": "0x76E053c171c10d1070f9E7819B6933A837c3A3BB",
+      "value": "0",
+      "data": "0x79ba5097",
+      "contractMethod": {
+        "inputs": [],
+        "name": "acceptOwnership",
+        "payable": false
+      },
+      "contractInputsValues": {}
+    }
+  ]
+}

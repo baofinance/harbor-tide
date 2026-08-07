@@ -94,8 +94,10 @@ run_one() {
   echo ""
   echo "=== Harbor Tide deploy (UNSALTED / no factory) — $network (chainId $chain_id) ==="
   echo "  sender: $SENDER   ⚠️ per-chain address (NOT canonical CREATE3). Test/fallback only."
+  "$FORGE" build script/ccip/CCIPArtifacts.sol >/dev/null
   local cmd=("$FORGE" script script/DeployUnsalted.s.sol:DeployUnsalted
     --rpc-url "$rpc_url" --broadcast --slow --timeout "$TIMEOUT" --sender "$SENDER" "${SIGNER[@]}")
+  [[ "$network" == "megaeth" ]] && cmd+=(--skip-simulation)
   [[ "$VERIFY" == true ]] && cmd+=(--verify --retries "$VERIFY_RETRIES" --delay "$VERIFY_DELAY")
   [[ "$RESUME" == true ]] && cmd+=(--resume)
   "${cmd[@]}"

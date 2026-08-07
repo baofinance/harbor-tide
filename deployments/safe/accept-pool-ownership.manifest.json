@@ -1,0 +1,33 @@
+{
+  "description": "Harbor Tide \u2014 multisig accepts BurnMintTokenPool ownership (one Safe batch per chain).",
+  "multisig": "0x9bABfC1A1952a6ed2caC1922BFfE80c0506364a2",
+  "token": "0xDA187eB6F4D7eE3a0b8f5cd81eED8d347f5693aD",
+  "prerequisite": "Deploy.s.sol must have called transferOwnership(multisig) on each pool (done at deploy).",
+  "nextStep": "Run Configure_CCIP.s.sol on each chain after these txs confirm.",
+  "files": [
+    {
+      "chainId": 1,
+      "network": "Ethereum mainnet",
+      "pool": "0x76E053c171c10d1070f9E7819B6933A837c3A3BB",
+      "file": "accept-pool-ownership-1.json"
+    },
+    {
+      "chainId": 42161,
+      "network": "Arbitrum One",
+      "pool": "0x3A1b6bE99E0b77e07269e8c45c51CE62052C15Cd",
+      "file": "accept-pool-ownership-42161.json"
+    },
+    {
+      "chainId": 8453,
+      "network": "Base",
+      "pool": "0x5f72d9a34F60DB1Eb22baef9b24653457275485F",
+      "file": "accept-pool-ownership-8453.json"
+    },
+    {
+      "chainId": 4326,
+      "network": "MegaETH",
+      "pool": "0x7CC39a29b358FaaE718fe50E6571e1C80Aa6Cd69",
+      "file": "accept-pool-ownership-4326.json"
+    }
+  ]
+}
