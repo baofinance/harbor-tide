@@ -1,0 +1,81 @@
+{
+  "description": "Harbor Tide \u2014 Safe Transaction Builder batches for Configure_CCIP (one folder per chain).",
+  "multisig": "0x9bABfC1A1952a6ed2caC1922BFfE80c0506364a2",
+  "token": "0xDA187eB6F4D7eE3a0b8f5cd81eED8d347f5693aD",
+  "prerequisite": "Pool ownership must already be accepted by the multisig on each chain (see deployments/safe/).",
+  "matches": "script/Configure_CCIP.s.sol (registerAdmin \u2192 acceptAdmin \u2192 setPool \u2192 applyChainUpdates).",
+  "rateLimits": "Disabled (isEnabled=false) on all lanes; set per policy before production if needed.",
+  "laneNote": "MegaETH\u2194Robinhood may not exist in the Chainlink directory yet; pool config can still name that remote.",
+  "files": [
+    {
+      "chainId": 1,
+      "network": "Ethereum mainnet",
+      "pool": "0x76E053c171c10d1070f9E7819B6933A837c3A3BB",
+      "tokenAdminRegistry": "0xb22764f98dD05c789929716D677382Df22C05Cb6",
+      "registryModuleOwnerCustom": "0x4855174E9479E211337832E109E7721d43A4CA64",
+      "file": "1/configure-ccip.json",
+      "remotes": [
+        42161,
+        8453,
+        4326,
+        4663
+      ]
+    },
+    {
+      "chainId": 42161,
+      "network": "Arbitrum One",
+      "pool": "0x3A1b6bE99E0b77e07269e8c45c51CE62052C15Cd",
+      "tokenAdminRegistry": "0x39AE1032cF4B334a1Ed41cdD0833bdD7c7E7751E",
+      "registryModuleOwnerCustom": "0x1f1df9f7fc939E71819F766978d8F900B816761b",
+      "file": "42161/configure-ccip.json",
+      "remotes": [
+        1,
+        8453,
+        4326,
+        4663
+      ]
+    },
+    {
+      "chainId": 8453,
+      "network": "Base",
+      "pool": "0x5f72d9a34F60DB1Eb22baef9b24653457275485F",
+      "tokenAdminRegistry": "0x6f6C373d09C07425BaAE72317863d7F6bb731e37",
+      "registryModuleOwnerCustom": "0xAFEd606Bd2CAb6983fC6F10167c98aaC2173D77f",
+      "file": "8453/configure-ccip.json",
+      "remotes": [
+        1,
+        42161,
+        4326,
+        4663
+      ]
+    },
+    {
+      "chainId": 4326,
+      "network": "MegaETH",
+      "pool": "0x7CC39a29b358FaaE718fe50E6571e1C80Aa6Cd69",
+      "tokenAdminRegistry": "0xf4a170A36D4C656F614d44453f73308Bdb275196",
+      "registryModuleOwnerCustom": "0x1E11bAB3f07fa72312182fFDc460AE45400E6e7b",
+      "file": "4326/configure-ccip.json",
+      "remotes": [
+        1,
+        42161,
+        8453,
+        4663
+      ]
+    },
+    {
+      "chainId": 4663,
+      "network": "Robinhood Chain",
+      "pool": "0x756B95D0bB61c195d1196EB2143D8D88570036AC",
+      "tokenAdminRegistry": "0x1912C3cFafE8A76A32a92861d815aC2837F237Ca",
+      "registryModuleOwnerCustom": "0x3237c0D7B58BEc8Dc17F00103B784Bd6678f789E",
+      "file": "4663/configure-ccip.json",
+      "remotes": [
+        1,
+        42161,
+        8453,
+        4326
+      ]
+    }
+  ]
+}
