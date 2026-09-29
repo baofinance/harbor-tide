@@ -15,7 +15,7 @@ if [[ -f .env.local ]]; then
   set +a
 fi
 
-# Map a foundry rpc_endpoints alias (mainnet|arbitrum|base|megaeth|local) to its RPC URL env var.
+# Map a foundry rpc_endpoints alias (mainnet|arbitrum|base|megaeth|robinhood|local) to its RPC URL env var.
 # Echoes the URL on stdout; non-zero exit if unset.
 resolve_rpc_url() {
   local network=$1 url=""
@@ -25,6 +25,7 @@ resolve_rpc_url() {
     arbitrum) url=${ARBITRUM_RPC_URL:-} ;;
     base) url=${BASE_RPC_URL:-} ;;
     megaeth) url=${MEGAETH_RPC_URL:-} ;;
+    robinhood) url=${ROBINHOOD_RPC_URL:-} ;;
     *)
       # Allow a raw URL to be passed through unchanged.
       if [[ "$network" == http*://* ]]; then url=$network; fi

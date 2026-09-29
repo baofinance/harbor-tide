@@ -36,7 +36,8 @@ Usage:
   script/verify.sh --network <name> [--unsalted] [--aux <path>]
 
 Options:
-  --network <name>   Required. rpc_endpoints key in foundry.toml (mainnet|arbitrum|base|megaeth|local).
+  --network <name>   Required. rpc_endpoints key in foundry.toml
+                     (mainnet|arbitrum|base|megaeth|robinhood|local).
   --unsalted         Read the -unsalted aux file (for deploys made with deploy-unsalted.sh).
   --aux <path>       Explicit aux JSON path (overrides the default).
   -h, --help         Show help.
@@ -66,6 +67,7 @@ CHAIN_ID=$("$CAST" chain-id --rpc-url "$RPC_URL")
 # forge verify-contract --chain accepts a numeric id for chains not in foundry's built-in name list.
 VERIFY_CHAIN="$NETWORK"
 [[ "$NETWORK" == "megaeth" ]] && VERIFY_CHAIN="4326"
+[[ "$NETWORK" == "robinhood" ]] && VERIFY_CHAIN="4663"
 
 # Per-chain CCIP addresses (mirror script/config/CCIPChains.sol) for the pool constructor args.
 case "$CHAIN_ID" in
@@ -73,6 +75,7 @@ case "$CHAIN_ID" in
   42161) ROUTER="0x141fa059441E0ca23ce184B6A78bafD2A517DdE8"; RMN="0xC311a21e6fEf769344EB1515588B9d535662a145" ;;
   8453) ROUTER="0x881e3A65B4d4a04dD529061dd0071cf975F58bCD"; RMN="0xC842c69d54F83170C42C4d556B4F6B2ca53Dd3E8" ;;
   4326) ROUTER="0xfa546248C54939AA6C48279CdC1EAf9A1125c411"; RMN="0xA27056438FfA1f286AB197488808692F0db93F8B" ;;
+  4663) ROUTER="0x06fC836cf9839B1cd891C440A0a45242DA6Ae1c9"; RMN="0xe8464c353210Cc398A45dB2454FBc5BCd25fFf20" ;;
   *) echo "❌ Unsupported chainId $CHAIN_ID" >&2; exit 1 ;;
 esac
 
@@ -89,6 +92,7 @@ echo "=== Verify Harbor Tide ==="
 echo "  network:  $NETWORK (chainId $CHAIN_ID)"
 echo "  aux:      $AUX"
 echo "  token:    $TOKEN (ERC1967Proxy)"
+[[ "$NETWORK" == "robinhood" ]] && echo "  verifier: Etherscan V2 (robin.etherscan.io / chainid=4663)"
 echo ""
 
 ok=0; fail=0; skip=0
@@ -105,26 +109,37 @@ verify_one() {
     echo "⏭  Skip $label ($address): no code on-chain"; skip=$((skip + 1)); return
   fi
 
+  echo "⏳ Verifying $label ($address) …"
   local -a cmd
   cmd=("$FORGE" verify-contract "$address" "$contract_path"
     --verifier etherscan --etherscan-api-key "$ETHERSCAN_API_KEY"
     --compiler-version "$compiler"
+    --chain "$VERIFY_CHAIN"
     --watch --retries "$VERIFY_RETRIES" --delay "$VERIFY_DELAY")
+  # MegaETH / Robinhood: also pin Etherscan V2 URL with chainid (robin.etherscan.io / etc).
+  # Without --chain, forge mislabels the target as "mainnet" and GUID polling fails.
   if [[ "$NETWORK" == "megaeth" ]]; then
     cmd+=(--verifier-url "https://api.etherscan.io/v2/api?chainid=4326")
-  else
-    cmd+=(--chain "$VERIFY_CHAIN")
+  elif [[ "$NETWORK" == "robinhood" ]]; then
+    cmd+=(--verifier-url "https://api.etherscan.io/v2/api?chainid=4663")
   fi
   [[ -n "$ctor_args" ]] && cmd+=(--constructor-args "$ctor_args")
 
-  local out
-  out=$("${cmd[@]}" 2>&1 || true)
-  if echo "$out" | grep -qiE "successfully verified|already verified"; then
+  # Stream forge output live (retries can take minutes); keep a copy for the pass/fail check.
+  local log
+  log=$(mktemp)
+  set +e
+  "${cmd[@]}" 2>&1 | tee "$log"
+  local forge_rc=${PIPESTATUS[0]}
+  set -e
+  if grep -qiE "successfully verified|already verified" "$log"; then
     echo "✅ $label ($address)"; ok=$((ok + 1))
   else
-    echo "❌ $label ($address)"; echo "$out" | grep -iE "error|fail" | head -5 | sed 's/^/   /'
+    echo "❌ $label ($address) (forge exit $forge_rc)"
+    grep -iE "error|fail|reject|unable" "$log" | head -8 | sed 's/^/   /' || true
     fail=$((fail + 1))
   fi
+  rm -f "$log"
 }
 
 # 1. Token implementation (no constructor args).

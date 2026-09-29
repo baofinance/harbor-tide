@@ -19,7 +19,7 @@ source "$ROOT_DIR/script/_load-env.sh"
 
 FORGE=${FORGE:-forge}
 CAST=${CAST:-cast}
-ALL_NETWORKS="mainnet arbitrum base megaeth"
+ALL_NETWORKS="mainnet arbitrum base megaeth robinhood"
 
 # Waits / retries (override via env).
 TIMEOUT="${DEPLOY_TIMEOUT:-900}"
@@ -32,7 +32,8 @@ Usage:
   script/deploy-unsalted.sh --network <name|all|csv> [--account <keystore>] [--sender <addr>] [--verify] [--resume]
 
 Options:
-  --network <v>      Required. rpc_endpoints key, a comma list, or "all" (mainnet,arbitrum,base,megaeth).
+  --network <v>      Required. rpc_endpoints key, a comma list, or "all"
+                     (mainnet,arbitrum,base,megaeth,robinhood).
   --account <name>   Foundry keystore account (default: $DEPLOYER_ACCOUNT or "deployer"). Or set PRIVATE_KEY.
   --sender <addr>    Deployer EOA (default: derived from the keystore account).
   --verify           Verify during deploy (default: off; prefer script/verify.sh --unsalted after).

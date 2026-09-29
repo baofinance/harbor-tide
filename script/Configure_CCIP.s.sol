@@ -29,7 +29,7 @@ import {
 ///
 /// @dev Pool addresses are read automatically from the deployments/aux-<chainId>.json files written by
 ///      Deploy.s.sol (run on each chain first). You can override with POOL and REMOTE_POOLS env vars.
-///      REMOTE_CHAIN_IDS defaults to the other three target chains; override to wire a subset.
+///      REMOTE_CHAIN_IDS defaults to the other target chains; override to wire a subset.
 ///
 /// Usage (after deploying on all chains):
 ///   forge script script/Configure_CCIP.s.sol:Configure_CCIP --rpc-url mainnet --broadcast --account multisig
@@ -43,7 +43,7 @@ contract Configure_CCIP is HarborTideFactoryDeployer, Script {
         address pool = vm.envOr("POOL", address(0));
         if (pool == address(0)) pool = _readDeployedPool(block.chainid);
 
-        // Lanes to wire: env override, else the other three target chains.
+        // Lanes to wire: env override, else the other target chains.
         uint256[] memory remoteChainIds = vm.envOr("REMOTE_CHAIN_IDS", ",", _defaultRemoteChainIds());
 
         // Remote pools: env override, else read each from its recorded deployment.
@@ -88,8 +88,14 @@ contract Configure_CCIP is HarborTideFactoryDeployer, Script {
 
     /// @notice The Harbor Tide target chains other than the current one.
     function _defaultRemoteChainIds() internal view returns (uint256[] memory remotes) {
-        uint256[4] memory all = [CCIPChains.ETHEREUM, CCIPChains.ARBITRUM, CCIPChains.BASE, CCIPChains.MEGAETH];
-        remotes = new uint256[](3);
+        uint256[5] memory all = [
+            CCIPChains.ETHEREUM,
+            CCIPChains.ARBITRUM,
+            CCIPChains.BASE,
+            CCIPChains.MEGAETH,
+            CCIPChains.ROBINHOOD
+        ];
+        remotes = new uint256[](4);
         uint256 n;
         for (uint256 i = 0; i < all.length; i++) {
             if (all[i] != block.chainid) remotes[n++] = all[i];

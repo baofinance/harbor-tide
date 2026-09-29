@@ -15,7 +15,7 @@ source "$ROOT_DIR/script/_load-env.sh"
 
 FORGE=${FORGE:-forge}
 CAST=${CAST:-cast}
-ALL_NETWORKS="mainnet arbitrum base megaeth"
+ALL_NETWORKS="mainnet arbitrum base megaeth robinhood"
 
 # Waits / retries (override via env). Mainnet can be slow, so give broadcasts and verification room.
 TIMEOUT="${DEPLOY_TIMEOUT:-900}"        # seconds to wait for each tx to confirm (forge --timeout)
@@ -28,8 +28,9 @@ Usage:
   script/deploy.sh --network <name|all|csv> [--account <keystore>] [--sender <addr>] [--no-verify] [--resume]
 
 Options:
-  --network <v>      Required. rpc_endpoints key (mainnet|arbitrum|base|megaeth|local),
-                     a comma list (mainnet,arbitrum), or "all" (mainnet,arbitrum,base,megaeth).
+  --network <v>      Required. rpc_endpoints key (mainnet|arbitrum|base|megaeth|robinhood|local),
+                     a comma list (mainnet,arbitrum), or "all"
+                     (mainnet,arbitrum,base,megaeth,robinhood).
   --account <name>   Foundry keystore account (default: $DEPLOYER_ACCOUNT or "deployer"). Or set PRIVATE_KEY.
   --sender <addr>    Deployer EOA (default: derived from the keystore account).
   --no-verify        Skip Etherscan verification (default: on; needs ETHERSCAN_API_KEY).

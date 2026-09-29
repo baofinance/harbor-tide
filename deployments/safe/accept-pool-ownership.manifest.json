@@ -12,10 +12,16 @@
       "file": "accept-pool-ownership-1.json"
     },
     {
-      "chainId": 42161,
-      "network": "Arbitrum One",
-      "pool": "0x3A1b6bE99E0b77e07269e8c45c51CE62052C15Cd",
-      "file": "accept-pool-ownership-42161.json"
+      "chainId": 4326,
+      "network": "MegaETH",
+      "pool": "0x7CC39a29b358FaaE718fe50E6571e1C80Aa6Cd69",
+      "file": "accept-pool-ownership-4326.json"
+    },
+    {
+      "chainId": 4663,
+      "network": "Robinhood Chain",
+      "pool": "0x756B95D0bB61c195d1196EB2143D8D88570036AC",
+      "file": "accept-pool-ownership-4663.json"
     },
     {
       "chainId": 8453,
@@ -24,10 +30,10 @@
       "file": "accept-pool-ownership-8453.json"
     },
     {
-      "chainId": 4326,
-      "network": "MegaETH",
-      "pool": "0x7CC39a29b358FaaE718fe50E6571e1C80Aa6Cd69",
-      "file": "accept-pool-ownership-4326.json"
+      "chainId": 42161,
+      "network": "Arbitrum One",
+      "pool": "0x3A1b6bE99E0b77e07269e8c45c51CE62052C15Cd",
+      "file": "accept-pool-ownership-42161.json"
     }
   ]
 }

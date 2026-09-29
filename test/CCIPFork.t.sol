@@ -17,10 +17,10 @@ import {
 } from "@tide-script/ccip/ICCIP.sol";
 
 /// @notice End-to-end fork test against the *real* Chainlink CCIP contracts, parametrized over every
-///         target chain (Ethereum, Arbitrum, Base, MegaETH). For each chain it mirrors `Deploy.s.sol` +
-///         `Configure_CCIP.s.sol`: deploys the token (home mints 1bn, remotes mint 0), the governance
-///         timelock (home only), and the BurnMintTokenPool; then registers the token admin via
-///         `getCCIPAdmin`, sets the pool, and wires lanes to the other three chains.
+///         target chain (Ethereum, Arbitrum, Base, MegaETH, Robinhood). For each chain it mirrors
+///         `Deploy.s.sol` + `Configure_CCIP.s.sol`: deploys the token (home mints 1bn, remotes mint 0),
+///         the governance timelock (home only), and the BurnMintTokenPool; then registers the token
+///         admin via `getCCIPAdmin`, sets the pool, and wires lanes to the other target chains.
 /// @dev Each chain's test skips when its RPC env var is unset, so the suite stays green locally.
 ///      Exercising each chain's live TokenAdminRegistry / RegistryModuleOwnerCustom directly is stronger
 ///      than inferring compatibility from `typeAndVersion`.
@@ -43,6 +43,10 @@ contract CCIPForkTest is Test {
 
     function test_fork_wiring_megaeth() public {
         _runChainWiring(CCIPChains.MEGAETH, "MEGAETH_RPC_URL");
+    }
+
+    function test_fork_wiring_robinhood() public {
+        _runChainWiring(CCIPChains.ROBINHOOD, "ROBINHOOD_RPC_URL");
     }
 
     /// @notice Deploy + wire the full Harbor Tide CCIP stack on one chain's fork.
@@ -95,9 +99,14 @@ contract CCIPForkTest is Test {
         assertEq(ITokenAdminRegistry(cfg.tokenAdminRegistry).getPool(address(token)), pool, "pool not registered");
         console.log("  pool %s registered in live TokenAdminRegistry", pool);
 
-        // --- Wire lanes to the other three target chains. -----------------------------------------
-        uint256[4] memory all =
-            [CCIPChains.ETHEREUM, CCIPChains.ARBITRUM, CCIPChains.BASE, CCIPChains.MEGAETH];
+        // --- Wire lanes to the other target chains. -----------------------------------------------
+        uint256[5] memory all = [
+            CCIPChains.ETHEREUM,
+            CCIPChains.ARBITRUM,
+            CCIPChains.BASE,
+            CCIPChains.MEGAETH,
+            CCIPChains.ROBINHOOD
+        ];
         for (uint256 i = 0; i < all.length; i++) {
             if (all[i] == chainId) continue;
             CCIPChains.Config memory remote = CCIPChains.configFor(all[i]);

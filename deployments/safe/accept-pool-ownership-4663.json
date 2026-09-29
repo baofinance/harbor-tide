@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "chainId": "4663",
+  "createdAt": 1790353370345,
+  "meta": {
+    "name": "Harbor Tide \u2014 accept pool ownership (Robinhood Chain)",
+    "description": "Call acceptOwnership() on the Chainlink BurnMintTokenPool at 0x756B95D0bB61c195d1196EB2143D8D88570036AC. Required before Configure_CCIP. Matches script/AcceptPoolOwnership.s.sol.",
+    "txBuilderVersion": "1.16.5",
+    "createdFromSafeAddress": "0x9bABfC1A1952a6ed2caC1922BFfE80c0506364a2"
+  },
+  "transactions": [
+    {
+      "to": "0x756B95D0bB61c195d1196EB2143D8D88570036AC",
+      "value": "0",
+      "data": "0x79ba5097",
+      "contractMethod": {
+        "inputs": [],
+        "name": "acceptOwnership",
+        "payable": false
+      },
+      "contractInputsValues": {}
+    }
+  ]
+}

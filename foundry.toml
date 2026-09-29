@@ -47,6 +47,7 @@ mainnet = "${MAINNET_RPC_URL}"
 arbitrum = "${ARBITRUM_RPC_URL}"
 base = "${BASE_RPC_URL}"
 megaeth = "${MEGAETH_RPC_URL}"
+robinhood = "${ROBINHOOD_RPC_URL}"
 local = "${LOCAL_URL}"
 
 # Etherscan API V2 uses a single key across all chains (https://docs.etherscan.io/etherscan-v2).
@@ -54,9 +55,9 @@ local = "${LOCAL_URL}"
 mainnet = { key = "${ETHERSCAN_API_KEY}" }
 arbitrum = { key = "${ETHERSCAN_API_KEY}", chain = 42161 }
 base = { key = "${ETHERSCAN_API_KEY}", chain = 8453 }
-# MegaETH (chain 4326) verifies via the Etherscan V2 multichain endpoint.
-# Use ?chainid=4326 in the URL — the `chain = 4326` field makes `forge script` abort with
-# "Chain 4326 not supported" when the RPC resolves to MegaETH.
+# MegaETH / Robinhood are not in Forge's built-in chain list. Put chainid in the V2 URL —
+# a bare `chain = <id>` field makes `forge script` abort with "Chain N not supported".
 megaeth = { key = "${ETHERSCAN_API_KEY}", url = "https://api.etherscan.io/v2/api?chainid=4326" }
+robinhood = { key = "${ETHERSCAN_API_KEY}", url = "https://api.etherscan.io/v2/api?chainid=4663" }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

@@ -98,9 +98,14 @@ deployed directly or via a stub.
 | Arbitrum One     | 42161    | 4949039107694359620    |
 | Base             | 8453     | 15971525489660198786   |
 | MegaETH          | 4326     | 6093540873831549674    |
+| Robinhood Chain  | 4663     | 6180753054346818345    |
 
 CCIP router / RMN / registry addresses live in `script/config/CCIPChains.sol` (sourced from the
 Chainlink CCIP mainnet directory — verify before any production deploy).
+
+> **Lane note:** as of wiring, Chainlink lists Robinhood ↔ Ethereum / Arbitrum / Base, but **not**
+> MegaETH ↔ Robinhood. Pool config can still name that remote; bridging between those two will fail
+> until Chainlink adds the lane.
 
 ## Develop
 
@@ -129,14 +134,14 @@ There are bash wrappers that load `.env`, prompt once for the keystore password,
 flags — use them or the raw `forge script` calls, whichever you prefer:
 
 ```bash
-script/deploy.sh --network all                # salted CREATE3 deploy on all four chains (same address)
+script/deploy.sh --network all                # salted CREATE3 deploy on all target chains (same address)
 script/deploy.sh --network mainnet            # ...or one chain at a time
 script/deploy-unsalted.sh --network all       # no-factory TEST deploy on all chains (per-chain addresses)
 script/verify.sh --network mainnet            # (re)verify everything from the aux file
 ```
 
 `--network` accepts a single rpc alias, a comma list (`mainnet,arbitrum`), or `all`
-(`mainnet,arbitrum,base,megaeth`). With `all`, the keystore password is prompted once and reused; each
+(`mainnet,arbitrum,base,megaeth,robinhood`). With `all`, the keystore password is prompted once and reused; each
 chain comes up as home (mainnet: 1bn + timelock) or remote (others: 0, CCIP-fed).
 
 > **Prerequisite:** the BaoFactory (CREATE3) at `0xD696E56b3A054734d4C6DCBD32E11a278b0EC458` must
@@ -221,7 +226,7 @@ forge script script/AcceptPoolOwnership.s.sol:AcceptPoolOwnership \
 ### 3. Per chain (as the multisig) — register CCIP admin and wire lanes
 
 Run this only **after** `Deploy` has run on all chains (so every `deployments/aux-<chainId>.json` exists).
-Pool addresses are read automatically from those files; `REMOTE_CHAIN_IDS` defaults to the other three
+Pool addresses are read automatically from those files; `REMOTE_CHAIN_IDS` defaults to the other
 target chains.
 
 ```bash

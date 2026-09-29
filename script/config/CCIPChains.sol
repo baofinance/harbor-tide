@@ -3,15 +3,20 @@ pragma solidity >=0.8.28 <0.9.0;
 
 /// @title CCIPChains
 /// @notice Per-network Chainlink CCIP configuration for the chains Harbor Tide targets:
-///         Ethereum mainnet (home), Arbitrum One, Base, MegaETH.
+///         Ethereum mainnet (home), Arbitrum One, Base, MegaETH, Robinhood Chain.
 /// @dev Addresses and selectors come from the Chainlink CCIP mainnet directory
 ///      (https://docs.chain.link/ccip/directory/mainnet). Verify before any production deploy.
-/// @dev Verified on-chain (2026-06) across all four chains: `TokenAdminRegistry` is 1.5.0 and
-///      `RegistryModuleOwnerCustom` is 1.6.0. This repo's CCT tooling (1.5.0 `BurnMintTokenPool`,
-///      single-arg `applyChainUpdates`) is compatible with that registry layer — the 1.6.0 RMOC's
-///      `registerAdminViaGetCCIPAdmin(address)` is signature-compatible, and the pool's OffRamp-facing
-///      `IPoolV1` interface is stable, so 1.6.0 lanes can drive a 1.5.0 pool. Proven end-to-end against
-///      live mainnet in `test/CCIPFork.t.sol`.
+/// @dev Verified on-chain (2026-06) across Ethereum/Arbitrum/Base/MegaETH: `TokenAdminRegistry` is
+///      1.5.0 and `RegistryModuleOwnerCustom` is 1.6.0. This repo's CCT tooling (1.5.0
+///      `BurnMintTokenPool`, single-arg `applyChainUpdates`) is compatible with that registry layer —
+///      the 1.6.0 RMOC's `registerAdminViaGetCCIPAdmin(address)` is signature-compatible, and the
+///      pool's OffRamp-facing `IPoolV1` interface is stable, so 1.6.0 lanes can drive a 1.5.0 pool.
+///      Proven end-to-end against live mainnet in `test/CCIPFork.t.sol`.
+/// @dev Robinhood Chain (added 2026-07 / wired 2026-09): addresses from
+///      https://docs.chain.link/ccip/directory/mainnet/chain/robinhood-mainnet. As of wiring,
+///      Chainlink lists lanes Robinhood ↔ Ethereum/Arbitrum/Base (and others) but **not**
+///      MegaETH ↔ Robinhood — pool config can still name that remote, but bridging will fail until
+///      Chainlink adds the lane.
 library CCIPChains {
     error UnsupportedChain(uint256 chainId);
 
@@ -29,6 +34,8 @@ library CCIPChains {
     // MegaETH verified (2026-06): EVM chain ID 4326 (via RPC), and the CCIP addresses/selector below
     // match the Chainlink directory (https://docs.chain.link/ccip/directory/mainnet/chain/megaeth-mainnet).
     uint256 internal constant MEGAETH = 4326;
+    // Robinhood Chain: EVM chain ID 4663; addresses/selector from the Chainlink directory.
+    uint256 internal constant ROBINHOOD = 4663;
 
     function configFor(uint256 chainId) internal pure returns (Config memory) {
         if (chainId == ETHEREUM) {
@@ -65,6 +72,15 @@ library CCIPChains {
                 rmnProxy: 0xA27056438FfA1f286AB197488808692F0db93F8B,
                 tokenAdminRegistry: 0xf4a170A36D4C656F614d44453f73308Bdb275196,
                 registryModuleOwnerCustom: 0x1E11bAB3f07fa72312182fFDc460AE45400E6e7b
+            });
+        }
+        if (chainId == ROBINHOOD) {
+            return Config({
+                chainSelector: 6180753054346818345,
+                router: 0x06fC836cf9839B1cd891C440A0a45242DA6Ae1c9,
+                rmnProxy: 0xe8464c353210Cc398A45dB2454FBc5BCd25fFf20,
+                tokenAdminRegistry: 0x1912C3cFafE8A76A32a92861d815aC2837F237Ca,
+                registryModuleOwnerCustom: 0x3237c0D7B58BEc8Dc17F00103B784Bd6678f789E
             });
         }
         revert UnsupportedChain(chainId);
